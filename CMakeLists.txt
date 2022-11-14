@@ -44,10 +44,10 @@ find_package(vision_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(PCL REQUIRED)
-find_package(CUDA REQUIRED)
 
-set(CUDA_VERSION 10.1)
-set(CUDA_TOOLKIT_ROOT_DIR /usr/local/cuda-${CUDA_VERSION})
+# Although FindCudaToolkit is the recommended way to do things, that cmake support is not available in Foxy's version of cmake
+# Instead, follow this: https://stackoverflow.com/questions/51756562/obtaining-the-cuda-include-dir-in-c-targets-with-native-cuda-support-cmake
+find_library(CUDART_LIBRARY cudart ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
 
 SET(CMAKE_BUILD_TYPE "Release")
 add_compile_options(-W)
@@ -82,12 +82,12 @@ file(GLOB_RECURSE SOURCE_FILES
 )
 
 
-cuda_add_executable(${PROJECT_NAME} src/pp_inference_node.cpp ${SOURCE_FILES})
+add_executable(${PROJECT_NAME} src/pp_inference_node.cpp ${SOURCE_FILES})
 
 target_include_directories(
   ${PROJECT_NAME}
   PUBLIC
-    ${CUDA_INCLUDE_DIRS}
+    ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
     ${TENSORRT_INCLUDE_DIRS}
 )
 
@@ -104,32 +104,33 @@ target_link_directories(
     /usr/${ARCH}-linux-gnu/lib/
 )
 
-ament_target_dependencies(${PROJECT_NAME} rclcpp std_msgs vision_msgs geometry_msgs sensor_msgs PCL CUDA)
+ament_target_dependencies(${PROJECT_NAME} rclcpp std_msgs vision_msgs geometry_msgs sensor_msgs PCL)
 
 target_link_libraries(${PROJECT_NAME}
     libnvinfer.so
     libnvonnxparser.so
     libnvinfer_plugin.so
+    ${CUDART_LIBRARY}
 )
 
-# install(TARGETS
-# 	${PROJECT_NAME}
-#   DESTINATION lib/${PROJECT_NAME})
+install(TARGETS
+	${PROJECT_NAME}
+  DESTINATION lib/${PROJECT_NAME})
 
-# install(DIRECTORY
-#   launch
-#   DESTINATION share/${PROJECT_NAME}/
-# )
+install(DIRECTORY
+  launch
+  DESTINATION share/${PROJECT_NAME}/
+)
 
-# if(BUILD_TESTING)
-#   find_package(ament_lint_auto REQUIRED)
-#   # the following line skips the linter which checks for copyrights
-#   # uncomment the line when a copyright and license is not present in all source files
-#   #set(ament_cmake_copyright_FOUND TRUE)
-#   # the following line skips cpplint (only works in a git repo)
-#   # uncomment the line when this package is not in a git repo
-#   #set(ament_cmake_cpplint_FOUND TRUE)
-#   ament_lint_auto_find_test_dependencies()
-# endif()
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  # the following line skips the linter which checks for copyrights
+  # uncomment the line when a copyright and license is not present in all source files
+  #set(ament_cmake_copyright_FOUND TRUE)
+  # the following line skips cpplint (only works in a git repo)
+  # uncomment the line when this package is not in a git repo
+  #set(ament_cmake_cpplint_FOUND TRUE)
+  ament_lint_auto_find_test_dependencies()
+endif()
 
 ament_package()
