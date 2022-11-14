@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.12.2)
 project(pp_infer LANGUAGES CXX CUDA)
 set(PROJECT_NAME pp_infer)
 EXECUTE_PROCESS( COMMAND uname -m COMMAND tr -d '\n' OUTPUT_VARIABLE ARCH )
@@ -60,17 +60,6 @@ endforeach()
 list(GET SMS -1 LATEST_SM)
 set(GENCODE "${GENCODE} -gencode arch=compute_${LATEST_SM},code=compute_${LATEST_SM}")
 
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}
-    -ccbin ${CMAKE_CXX_COMPILER}
-    -Xcompiler -DWIN_INTERFACE_CUSTOM
-    -Xcompiler -I/usr/${ARCH}-linux-gnu/include/
-    -Xlinker -lsocket
-    -Xlinker -rpath=/usr/lib/${ARCH}-linux-gnu/
-    -Xlinker -rpath=/usr/${ARCH}-linux-gnu/lib/
-    -Xlinker -L/usr/lib/${ARCH}-linux-gnu/
-    -Xlinker -L/usr/${ARCH}-linux-gnu/lib/
-)
-
 set(TENSORRT_INCLUDE_DIRS /usr/include/${ARCH}-linux-gnu/)
 set(TENSORRT_LIBRARY_DIRS /usr/lib/${ARCH}-linux-gnu/)
 
@@ -83,6 +72,11 @@ file(GLOB_RECURSE SOURCE_FILES
 
 
 add_executable(${PROJECT_NAME} src/pp_inference_node.cpp ${SOURCE_FILES})
+target_compile_options(${PROJECT_NAME}
+  PRIVATE
+    $<$<COMPILE_LANGUAGE:CUDA>:
+    >
+  )
 
 target_include_directories(
   ${PROJECT_NAME}
