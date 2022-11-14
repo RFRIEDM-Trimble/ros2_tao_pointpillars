@@ -14,7 +14,7 @@
 # limitations under the License.
 
 cmake_minimum_required(VERSION 3.5)
-project(pp_infer)
+project(pp_infer LANGUAGES CXX CUDA)
 set(PROJECT_NAME pp_infer)
 EXECUTE_PROCESS( COMMAND uname -m COMMAND tr -d '\n' OUTPUT_VARIABLE ARCH )
 message( STATUS "Architecture: ${ARCH}" )
@@ -42,10 +42,11 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(vision_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(PCL REQUIRED)
 find_package(CUDA REQUIRED)
 
-set(CUDA_VERSION 11.3)
+set(CUDA_VERSION 10.1)
 set(CUDA_TOOLKIT_ROOT_DIR /usr/local/cuda-${CUDA_VERSION})
 
 SET(CMAKE_BUILD_TYPE "Release")
@@ -73,17 +74,7 @@ set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}
 set(TENSORRT_INCLUDE_DIRS /usr/include/${ARCH}-linux-gnu/)
 set(TENSORRT_LIBRARY_DIRS /usr/lib/${ARCH}-linux-gnu/)
 
-include_directories(
-    ${CUDA_INCLUDE_DIRS}
-    ${TENSORRT_INCLUDE_DIRS}
-    ../include/
-)
 
-link_directories(
-    ${TENSORRT_LIBRARY_DIRS}
-    /usr/lib/${ARCH}-linux-gnu
-    /usr/${ARCH}-linux-gnu/lib/
-)
 
 file(GLOB_RECURSE SOURCE_FILES
     src/pointpillar.cpp
@@ -92,7 +83,28 @@ file(GLOB_RECURSE SOURCE_FILES
 
 
 cuda_add_executable(${PROJECT_NAME} src/pp_inference_node.cpp ${SOURCE_FILES})
-ament_target_dependencies(${PROJECT_NAME} rclcpp std_msgs vision_msgs geometry_msgs PCL CUDA)
+
+target_include_directories(
+  ${PROJECT_NAME}
+  PUBLIC
+    ${CUDA_INCLUDE_DIRS}
+    ${TENSORRT_INCLUDE_DIRS}
+)
+
+target_include_directories(${PROJECT_NAME} PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>  # <prefix>/include/mylib
+)
+
+target_link_directories(
+  ${PROJECT_NAME}
+  PUBLIC
+    ${TENSORRT_LIBRARY_DIRS}
+    /usr/lib/${ARCH}-linux-gnu
+    /usr/${ARCH}-linux-gnu/lib/
+)
+
+ament_target_dependencies(${PROJECT_NAME} rclcpp std_msgs vision_msgs geometry_msgs sensor_msgs PCL CUDA)
 
 target_link_libraries(${PROJECT_NAME}
     libnvinfer.so
@@ -100,24 +112,24 @@ target_link_libraries(${PROJECT_NAME}
     libnvinfer_plugin.so
 )
 
-install(TARGETS
-	${PROJECT_NAME}
-  DESTINATION lib/${PROJECT_NAME})
+# install(TARGETS
+# 	${PROJECT_NAME}
+#   DESTINATION lib/${PROJECT_NAME})
 
-install(DIRECTORY
-  launch
-  DESTINATION share/${PROJECT_NAME}/
-)
+# install(DIRECTORY
+#   launch
+#   DESTINATION share/${PROJECT_NAME}/
+# )
 
-if(BUILD_TESTING)
-  find_package(ament_lint_auto REQUIRED)
-  # the following line skips the linter which checks for copyrights
-  # uncomment the line when a copyright and license is not present in all source files
-  #set(ament_cmake_copyright_FOUND TRUE)
-  # the following line skips cpplint (only works in a git repo)
-  # uncomment the line when this package is not in a git repo
-  #set(ament_cmake_cpplint_FOUND TRUE)
-  ament_lint_auto_find_test_dependencies()
-endif()
+# if(BUILD_TESTING)
+#   find_package(ament_lint_auto REQUIRED)
+#   # the following line skips the linter which checks for copyrights
+#   # uncomment the line when a copyright and license is not present in all source files
+#   #set(ament_cmake_copyright_FOUND TRUE)
+#   # the following line skips cpplint (only works in a git repo)
+#   # uncomment the line when this package is not in a git repo
+#   #set(ament_cmake_cpplint_FOUND TRUE)
+#   ament_lint_auto_find_test_dependencies()
+# endif()
 
 ament_package()

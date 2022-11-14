@@ -36,14 +36,14 @@
 #include <string>
 
 #include "cuda_runtime.h"
-#include "../include/pp_infer/pointpillar.h"
+#include "pp_infer/pointpillar.h"
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
 #include "vision_msgs/msg/detection3_d_array.hpp"
 #include "pcl_conversions/pcl_conversions.h"
-#include "../include/pp_infer/point_cloud2_iterator.hpp"
+#include "sensor_msgs/point_cloud2_iterator.hpp"
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
@@ -196,8 +196,8 @@ private:
 
         detection.bbox.center.orientation = orientation;
 
-        hyp.id = std::to_string(nms_pred[i].id);
-        hyp.score = nms_pred[i].score;
+        // hyp.id = std::to_string(nms_pred[i].id);
+        // hyp.score = nms_pred[i].score;
         
         detection.header = msg->header;
         
